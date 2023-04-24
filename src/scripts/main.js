@@ -19,7 +19,7 @@ const reversFieldTurnRows = fieldTurnRows.map(rev => [...rev].reverse());
 let startGamePress;
 
 buttonStart.addEventListener('click', startGame);
-window.addEventListener('keydown', moveItem);
+window.addEventListener('keyup', moveItem);
 
 function startGame(eventStart) {
   startGamePress = true;
@@ -31,12 +31,13 @@ function startGame(eventStart) {
 
   removeStyleCell();
   clearCell();
-  fillRandomCell();
-  fillRandomCell();
+  fillRandomCell(true);
+  fillRandomCell(true);
 }
 
 function moveItem(eventKey) {
   eventKey.preventDefault();
+  let isMove = false;
 
   const arrKey = ['ArrowUp', 'ArrowDown', 'ArrowRight', 'ArrowLeft'];
 
@@ -46,29 +47,31 @@ function moveItem(eventKey) {
 
   switch (eventKey.key) {
     case 'ArrowUp':
-      move(fieldTurnRows);
+      isMove = move(fieldTurnRows);
       break;
     case 'ArrowDown':
-      move(reversFieldTurnRows);
+      isMove = move(reversFieldTurnRows);
       break;
     case 'ArrowRight':
-      move(reversField);
+      isMove = move(reversField);
       break;
     case 'ArrowLeft':
-      move(gameField);
+      isMove = move(gameField);
       break;
     default:
       throw Error('key no move');
   }
 
-  const state = fillRandomCell();
+  const state = fillRandomCell(isMove);
 
   if (!state) {
-    gameOver(addScore(0), !state);
+    gameOver(score.textContent, true);
   }
 }
 
 function move(field) {
+  let isMoveCell = false;
+
   field.forEach(e => {
     for (let i = 1; i < e.length; i++) {
       if (e[i].textContent === '') {
@@ -91,9 +94,11 @@ function move(field) {
         continue;
       }
 
-      mergeMove(target, e[i]);
+      isMoveCell = mergeMove(target, e[i]);
     }
   });
+
+  return isMoveCell;
 }
 
 function mergeMove(targ, cell) {
@@ -101,15 +106,21 @@ function mergeMove(targ, cell) {
     targ.textContent = cell.textContent;
     cell.textContent = '';
     cell.className = 'field-cell';
+
+    return true;
   }
 
   if (targ.textContent === cell.textContent) {
     targ.textContent = cell.textContent * 2;
     cell.textContent = '';
     cell.className = 'field-cell';
-    addScore(targ.textContent);
-    gameOver(targ.textContent);
+
+    gameOver(addScore(targ.textContent));
+
+    return true;
   }
+
+  return false;
 }
 
 function random2And4() {
@@ -125,7 +136,7 @@ function getRandom(max, min = 0) {
   return Math.floor(Math.random() * (max - min) + min);
 }
 
-function fillRandomCell() {
+function fillRandomCell(isMove) {
   const emptyCells = [...gameField]
     .flat()
     .filter(cell => !cell.textContent);
@@ -134,8 +145,10 @@ function fillRandomCell() {
     return false;
   }
 
-  emptyCells[getRandom(emptyCells.length)].textContent = random2And4();
-  addStyleCell();
+  if (isMove) {
+    emptyCells[getRandom(emptyCells.length)].textContent = random2And4();
+    addStyleCell();
+  }  
 
   return true;
 }
@@ -168,14 +181,14 @@ function addStyleCell() {
   });
 }
 
-function addScore(num) {
+function addScore(num = 0) {
   score.textContent = +score.textContent + +num;
 
-  return score.textContent;
+  return +score.textContent + +num;
 }
 
 function gameOver(num, over = false) {
-  if (num === '2048') {
+  if (+num >= 2048) {
     win.classList.remove('hidden');
     startGamePress = false;
 
